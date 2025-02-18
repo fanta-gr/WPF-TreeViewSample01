@@ -25,16 +25,27 @@ namespace WpfApp1.Model
             {
                 if (_isChecked != value)
                 {
+                    if (_isChecked == true && value == null)
+                    {
+                        // 現在選択状態のノードをクリックした場合は未選択 (false) にする
+                        value = false;
+                    }
+                    else if (_isChecked == null && value == true)
+                    {
+                        // 部分選択のノードをクリックした場合は全選択 (true) にする
+                        value = true;
+                    }
+
                     _isChecked = value;
                     OnPropertyChanged(nameof(IsChecked));
 
-                    // 子ノードのチェック状態を変更（子にも適用）
+                    // 子ノードのチェック状態を変更
                     foreach (var child in Children)
                     {
                         child.IsChecked = value;
                     }
 
-                    // 親ノードのチェック状態を更新（逆伝播）
+                    // 親ノードのチェック状態を更新
                     UpdateParentCheckState();
                 }
             }
@@ -75,7 +86,7 @@ namespace WpfApp1.Model
             bool allUnchecked = Parent.Children.All(c => c.IsChecked == false);
 
             Parent._isChecked = allChecked ? true : allUnchecked ? false : (bool?)null;
-            Parent.OnPropertyChanged(nameof(Parent.IsChecked));
+            Parent.OnPropertyChanged(nameof(IsChecked));
 
             // さらに上の親ノードも更新
             Parent.UpdateParentCheckState();
