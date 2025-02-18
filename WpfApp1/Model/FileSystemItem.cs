@@ -10,14 +10,15 @@ namespace WpfApp1.Model
 {
     public class FileSystemItem : INotifyPropertyChanged
     {
-        private bool _isChecked;
+        private bool? _isChecked = false; // true: チェック, false: 未チェック, null: 部分チェック
         private ObservableCollection<FileSystemItem> _children;
+        private FileSystemItem _parent;
 
         public string Name { get; set; }
         public string FullPath { get; set; }
         public bool IsDirectory { get; set; }
 
-        public bool IsChecked
+        public bool? IsChecked
         {
             get => _isChecked;
             set
@@ -27,11 +28,14 @@ namespace WpfApp1.Model
                     _isChecked = value;
                     OnPropertyChanged(nameof(IsChecked));
 
-                    // 子要素のチェック状態を更新
+                    // 子ノードのチェック状態を変更（子にも適用）
                     foreach (var child in Children)
                     {
                         child.IsChecked = value;
                     }
+
+                    // 親ノードのチェック状態を更新（逆伝播）
+                    UpdateParentCheckState();
                 }
             }
         }
@@ -53,9 +57,29 @@ namespace WpfApp1.Model
             }
         }
 
+        public FileSystemItem Parent
+        {
+            get => _parent;
+            set => _parent = value;
+        }
+
         public event PropertyChangedEventHandler PropertyChanged;
         protected void OnPropertyChanged(string propertyName) =>
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+
+        private void UpdateParentCheckState()
+        {
+            if (Parent == null) return;
+
+            bool allChecked = Parent.Children.All(c => c.IsChecked == true);
+            bool allUnchecked = Parent.Children.All(c => c.IsChecked == false);
+
+            Parent._isChecked = allChecked ? true : allUnchecked ? false : (bool?)null;
+            Parent.OnPropertyChanged(nameof(Parent.IsChecked));
+
+            // さらに上の親ノードも更新
+            Parent.UpdateParentCheckState();
+        }
     }
 
 }

@@ -39,19 +39,20 @@ namespace WpfApp1.ViewModel
             }
         }
 
-        private FileSystemItem CreateFileSystemItem(DirectoryInfo directoryInfo)
+        private FileSystemItem CreateFileSystemItem(DirectoryInfo directoryInfo, FileSystemItem parent = null)
         {
             var item = new FileSystemItem
             {
                 Name = directoryInfo.Name,
                 FullPath = directoryInfo.FullName,
-                IsDirectory = true
+                IsDirectory = true,
+                Parent = parent // 親ノードを設定
             };
 
             // フォルダのサブフォルダを追加
             foreach (var dir in directoryInfo.GetDirectories())
             {
-                item.Children.Add(CreateFileSystemItem(dir));
+                item.Children.Add(CreateFileSystemItem(dir, item)); // 子ノードに親を設定
             }
 
             // フォルダ内のファイルを追加
@@ -61,7 +62,8 @@ namespace WpfApp1.ViewModel
                 {
                     Name = file.Name,
                     FullPath = file.FullName,
-                    IsDirectory = false
+                    IsDirectory = false,
+                    Parent = item // 親ノードを設定
                 });
             }
 
