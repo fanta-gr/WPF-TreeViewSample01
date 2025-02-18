@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading.Tasks;
 using WpfApp1.Model;
 using WpfApp1.View;
+using Newtonsoft.Json;
 
 namespace WpfApp1.ViewModel
 {
@@ -15,6 +16,10 @@ namespace WpfApp1.ViewModel
     {
         private ObservableCollection<FileSystemItem> _items;
         private ObservableCollection<FileSystemItem> _selectedFiles;
+        private ObservableCollection<string> _saveNames;
+        private string _selectedSave;
+
+        private const string SaveFilePath = "selected_files.json";
 
         public ObservableCollection<FileSystemItem> Items
         {
@@ -36,10 +41,33 @@ namespace WpfApp1.ViewModel
             }
         }
 
+        public ObservableCollection<string> SaveNames
+        {
+            get => _saveNames;
+            set
+            {
+                _saveNames = value;
+                OnPropertyChanged(nameof(SaveNames));
+            }
+        }
+
+        public string SelectedSave
+        {
+            get => _selectedSave;
+            set
+            {
+                _selectedSave = value;
+                OnPropertyChanged(nameof(SelectedSave));
+                LoadSelection(value);
+            }
+        }
+
         public MainViewModel()
         {
             SelectedFiles = new ObservableCollection<FileSystemItem>();
+            SaveNames = new ObservableCollection<string>();
             LoadFileSystem(@"D:\Contents\競馬");
+            LoadSavedSelections();
         }
 
         private void LoadFileSystem(string rootPath)
@@ -128,6 +156,77 @@ namespace WpfApp1.ViewModel
         {
             var window = new SelectedFilesWindow(this);
             window.Show();
+        }
+
+        /// <summary>
+        /// 選択状態を JSON に保存 (Newtonsoft.Json 使用)
+        /// </summary>
+        public void SaveSelection()
+        {
+            var selectedFilePaths = SelectedFiles.Select(f => f.FullPath).ToList();
+
+            Dictionary<string, List<string>> saveData = new Dictionary<string, List<string>>();
+            if (File.Exists(SaveFilePath))
+            {
+                var json = File.ReadAllText(SaveFilePath);
+                saveData = JsonConvert.DeserializeObject<Dictionary<string, List<string>>>(json) ?? new Dictionary<string, List<string>>();
+            }
+
+            string saveName = "Selection " + (saveData.Count + 1);
+            saveData[saveName] = selectedFilePaths;
+
+            File.WriteAllText(SaveFilePath, JsonConvert.SerializeObject(saveData, Formatting.Indented));
+            SaveNames.Add(saveName);
+            SelectedSave = saveName;
+        }
+
+        /// <summary>
+        /// 保存済みの選択状態のリストをロード
+        /// </summary>
+        private void LoadSavedSelections()
+        {
+            SaveNames.Clear();
+
+            if (File.Exists(SaveFilePath))
+            {
+                var json = File.ReadAllText(SaveFilePath);
+                var saveData = JsonConvert.DeserializeObject<Dictionary<string, List<string>>>(json);
+
+                if (saveData != null)
+                {
+                    foreach (var key in saveData.Keys)
+                    {
+                        SaveNames.Add(key);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// 選択状態を復元
+        /// </summary>
+        private void LoadSelection(string saveName)
+        {
+            if (string.IsNullOrEmpty(saveName) || !File.Exists(SaveFilePath)) return;
+
+            var json = File.ReadAllText(SaveFilePath);
+            var saveData = JsonConvert.DeserializeObject<Dictionary<string, List<string>>>(json);
+            if (saveData == null || !saveData.ContainsKey(saveName)) return;
+
+            var selectedPaths = new HashSet<string>(saveData[saveName]);
+            SetSelectionRecursive(Items, selectedPaths);
+        }
+
+        private void SetSelectionRecursive(IEnumerable<FileSystemItem> items, HashSet<string> selectedPaths)
+        {
+            foreach (var item in items)
+            {
+                item.IsChecked = selectedPaths.Contains(item.FullPath);
+                if (item.Children.Any())
+                {
+                    SetSelectionRecursive(item.Children, selectedPaths);
+                }
+            }
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

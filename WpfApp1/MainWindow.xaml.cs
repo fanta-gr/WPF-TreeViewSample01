@@ -34,5 +34,10 @@ namespace WpfApp1
         {
             _viewModel.ShowSelectedFilesWindow();
         }
+
+        private void SaveSelection_Click(object sender, RoutedEventArgs e)
+        {
+            _viewModel.SaveSelection();
+        }
     }
 }
