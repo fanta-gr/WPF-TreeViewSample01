@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -10,29 +11,25 @@ using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
 using System.Windows.Shapes;
+using WpfApp1.Model;
 using WpfApp1.ViewModel;
 
-namespace WpfApp1
+namespace WpfApp1.View
 {
     /// <summary>
-    /// MainWindow.xaml の相互作用ロジック
+    /// SelectedFilesWindow.xaml の相互作用ロジック
     /// </summary>
-    public partial class MainWindow : Window
+    public partial class SelectedFilesWindow : Window
     {
-        private MainViewModel _viewModel;
+        public MainViewModel ViewModel { get; }
 
-        public MainWindow()
+        public SelectedFilesWindow(MainViewModel viewModel)
         {
             InitializeComponent();
-            _viewModel = new MainViewModel();
-            DataContext = _viewModel;
-        }
-
-        private void ShowSelectedFiles_Click(object sender, RoutedEventArgs e)
-        {
-            _viewModel.ShowSelectedFilesWindow();
+            ViewModel = viewModel;
+            DataContext = ViewModel;
         }
     }
+
 }

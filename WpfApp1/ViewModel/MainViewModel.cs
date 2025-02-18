@@ -7,12 +7,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using WpfApp1.Model;
+using WpfApp1.View;
 
 namespace WpfApp1.ViewModel
 {
     public class MainViewModel : INotifyPropertyChanged
     {
         private ObservableCollection<FileSystemItem> _items;
+        private ObservableCollection<FileSystemItem> _selectedFiles;
 
         public ObservableCollection<FileSystemItem> Items
         {
@@ -24,8 +26,19 @@ namespace WpfApp1.ViewModel
             }
         }
 
+        public ObservableCollection<FileSystemItem> SelectedFiles
+        {
+            get => _selectedFiles;
+            private set
+            {
+                _selectedFiles = value;
+                OnPropertyChanged(nameof(SelectedFiles));
+            }
+        }
+
         public MainViewModel()
         {
+            SelectedFiles = new ObservableCollection<FileSystemItem>();
             LoadFileSystem(@"D:\Contents\競馬");
         }
 
@@ -58,16 +71,63 @@ namespace WpfApp1.ViewModel
             // フォルダ内のファイルを追加
             foreach (var file in directoryInfo.GetFiles())
             {
-                item.Children.Add(new FileSystemItem
+                var fileItem = new FileSystemItem
                 {
                     Name = file.Name,
                     FullPath = file.FullName,
                     IsDirectory = false,
                     Parent = item // 親ノードを設定
-                });
+                };
+
+                fileItem.PropertyChanged += FileSelectionChanged;
+                item.Children.Add(fileItem);
             }
 
             return item;
+        }
+
+        /// <summary>
+        /// ファイルの選択状態が変更されたときに `SelectedFiles` を更新
+        /// </summary>
+        private void FileSelectionChanged(object sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName == nameof(FileSystemItem.IsChecked))
+            {
+                UpdateSelectedFiles();
+            }
+        }
+
+        /// <summary>
+        /// `SelectedFiles` を最新の状態に更新
+        /// </summary>
+        private void UpdateSelectedFiles()
+        {
+            SelectedFiles.Clear();
+            AddSelectedFilesRecursive(Items, SelectedFiles);
+        }
+
+        private void AddSelectedFilesRecursive(IEnumerable<FileSystemItem> items, ObservableCollection<FileSystemItem> selectedFiles)
+        {
+            foreach (var item in items)
+            {
+                if (!item.IsDirectory && item.IsChecked == true)
+                {
+                    selectedFiles.Add(item);
+                }
+                if (item.Children.Any())
+                {
+                    AddSelectedFilesRecursive(item.Children, selectedFiles);
+                }
+            }
+        }
+
+        /// <summary>
+        /// 選択されたファイルのリストを別ウィンドウで表示
+        /// </summary>
+        public void ShowSelectedFilesWindow()
+        {
+            var window = new SelectedFilesWindow(this);
+            window.Show();
         }
 
         public event PropertyChangedEventHandler PropertyChanged;

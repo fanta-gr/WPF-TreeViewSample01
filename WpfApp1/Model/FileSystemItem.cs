@@ -39,7 +39,7 @@ namespace WpfApp1.Model
                     _isChecked = value;
                     OnPropertyChanged(nameof(IsChecked));
 
-                    // 子ノードのチェック状態を変更
+                    // 子ノードのチェック状態を更新
                     foreach (var child in Children)
                     {
                         child.IsChecked = value;
